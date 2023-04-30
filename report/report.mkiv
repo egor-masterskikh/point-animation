@@ -1,0 +1,92 @@
+\environment[env.mkiv]
+
+\startcomponent .
+% \showframe
+\starttext
+
+\setuplayout[titlepage]
+\startalignment[middle]
+    \switchtobodyfont[exo2]
+
+    \switchtobodyfont[1.2em]
+
+    Московский авиационный институт \crlf
+    (национальный исследовательский университет)
+
+    Институт №7 \quotation{Робототехнические и интеллектуальные системы}
+
+    \vfill
+
+    {%
+        \switchtobodyfont[1.3em]
+        \bold
+
+        Лабораторная работа №1 \crlf
+        по курсу теоретической механики
+
+        Анимация точки
+
+        \blank[2*line]
+    }
+
+    \startalignment[left]
+        Выполнил студент группы М7О-106С-22 \crlf
+        Мастерских Егор Александрович
+
+        Преподаватель: Шамин Александр Юрьевич
+    \stopalignment
+
+    \blank[3*line]
+
+    \startalignment[right]
+        Оценка:
+
+        Дата:\hspace[medium] \currentdate[day, month, year]
+    \stopalignment
+
+    \vfill
+
+    Москва \currentdate[year]
+\stopalignment
+
+\page
+
+\setuplayout[reset]
+
+\startsubject[title={Вариант №12}]
+
+\startsubsubject[title={Задание}]
+Построить траекторию точки, заданную в полярных координатах, запустить анимацию движения точки, построить стрелки векторов скорости и ускорения, графики $x(t)$, $v_y(t)$.
+Построить также центр кривизны траектории.
+\stopsubsubject
+
+\startsubsubject[title={Закон движения точки}]
+
+\setupformulas[align=right]
+\startformula
+\startalign
+    \NC r(t) \NC = 2 + \sin 6t \NR
+    \NC \varphi(t) \NC = 6.5t + 1.2 \cos 6t \NR
+\stopalign
+\stopformula
+
+\stopsubsubject
+
+\startsubsubject[title={Текст программы}]
+
+\typepythonfile{../main.py}
+
+\stopsubsubject
+
+\startsubsubject[title={Результат работы программы}]
+
+\getrandomnumber\framenum{1}{1000}
+\externalfigure[animation.pdf][%
+    page=\framenum,
+    width=\textwidth,
+]
+
+\stopsubsubject
+
+\stoptext
+\stopcomponent
