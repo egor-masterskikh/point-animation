@@ -1,7 +1,9 @@
 import argparse
 from pathlib import Path
 import os
+import sympy as sp
 import numpy as np
+from math import sin, cos, tan, radians
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 
@@ -11,43 +13,144 @@ import matplotlib.figure as figure
 import matplotlib.axes as axes
 import matplotlib.lines as lines
 
+t_sp = sp.Symbol('t')
+
+r_sp = 2 + sp.sin(6 * t_sp)
+phi_sp = 6.5 * t_sp + 1.2 * sp.cos(6 * t_sp)
+
+x_sp = r_sp * sp.cos(phi_sp)
+y_sp = r_sp * sp.sin(phi_sp)
+v_x_sp = sp.diff(x_sp, t_sp)
+v_y_sp = sp.diff(y_sp, t_sp)
+a_x_sp = sp.diff(v_x_sp, t_sp)
+a_y_sp = sp.diff(v_y_sp, t_sp)
+
+x_f = sp.lambdify(
+    args=t_sp,  # аргументы, которые будет принимать функция
+    expr=x_sp,  # собственно логическая часть функции
+    modules='numpy'
+)
+y_f = sp.lambdify(args=t_sp, expr=y_sp, modules='numpy')
+v_x_f = sp.lambdify(args=t_sp, expr=v_x_sp, modules='numpy')
+v_y_f = sp.lambdify(args=t_sp, expr=v_y_sp, modules='numpy')
+a_x_f = sp.lambdify(args=t_sp, expr=a_x_sp, modules='numpy')
+a_y_f = sp.lambdify(args=t_sp, expr=a_y_sp, modules='numpy')
+
+
 T_END = 20
 
 t = np.linspace(0, T_END, 1000)  # массив моментов времени
 
-# массив значений модуля радиус-вектора для каждого момента времени
-r = 2 + np.sin(6 * t)
 
-# массив значений угла поворота радиус-вектора для каждого момента времени
-phi = 6.5 * t + 1.2 * np.cos(6 * t)
+def rot_matrix(phi):
+    """
+    :param phi: угол поворота в радианах
+    :return: матрица поворота
+    """
+    return [[cos(phi), -sin(phi)],
+            [sin(phi), cos(phi)]]
 
-x = r * np.cos(phi)
-y = r * np.sin(phi)
+
+def rot2D(x: np.ndarray, y: np.ndarray, phi):
+    """
+    Поворачивает объект (массив точек) на заданный угол
+    """
+    return np.matmul(rot_matrix(phi), [x, y])
+
+
+x = x_f(t)
+y = y_f(t)
+# TODO: коэффициент масштабирования должен подбираться автоматически
+v_x = v_x_f(t) / 3
+v_y = v_y_f(t) / 3
+v_phi = np.arctan2(v_y, v_x)
+a_x = a_x_f(t) / 20
+a_y = a_y_f(t) / 20
+a_phi = np.arctan2(a_y, a_x)
 
 fig: figure.Figure = plt.figure(figsize=(10, 10))
 
 ax: axes._axes.Axes = fig.add_subplot()
 
-ax.plot(x, y)
-
 # сохранение пропорций графика вне зависимости от конфигурации окна
 ax.axis('equal')
 
-P: lines.Line2D = ax.plot(x[0], y[0], marker='o')[0]
+# определение области графика, в которой будет производиться отрисовка
+# TODO: границы должны определяться из
+#  максимального и минимального значений координат и скоростей
+ax.set_xlim(-7, 7)
+ax.set_ylim(-7, 7)
+
+ax.plot(x, y, color='tab:blue')
+
+arrow_len = 0.3  # длина стрелки
+arrow_angle = 30  # угол раствора стрелки, в градусах
+arrow_width = 2 * arrow_len * tan(radians(arrow_angle / 2))
+arrow_x = np.array((-arrow_len, 0, -arrow_len))
+arrow_y = np.array((-arrow_width / 2, 0, arrow_width / 2))
+
+point: lines.Line2D = ax.plot(x[0], y[0], marker='o', color='tab:orange')[0]
+
+v_line = ax.plot(
+    (x[0], x[0] + v_x[0]),
+    (y[0], y[0] + v_y[0]),
+    color='tab:green'
+)[0]
+
+v_arrow_x, v_arrow_y = rot2D(arrow_x, arrow_y, v_phi[0])
+v_arrow = ax.plot(
+    x[0] + v_x[0] + v_arrow_x,
+    y[0] + v_y[0] + v_arrow_y,
+    color='tab:green'
+)[0]
+
+a_line = ax.plot(
+    (x[0], x[0] + a_x[0]),
+    (y[0], y[0] + a_y[0]),
+    color='tab:red'
+)[0]
+
+a_arrow_x, a_arrow_y = rot2D(arrow_x, arrow_y, a_phi[0])
+a_arrow = ax.plot(
+    x[0] + a_x[0] + a_arrow_x,
+    y[0] + a_y[0] + a_arrow_y,
+    color='tab:red'
+)[0]
 
 
 def update(frame):
-    P.set_data((x[frame],), (y[frame],))
+    point.set_data((x[frame],), (y[frame],))
+
+    v_line.set_data(
+        (x[frame], x[frame] + v_x[frame]),
+        (y[frame], y[frame] + v_y[frame])
+    )
+    v_arrow_x, v_arrow_y = rot2D(arrow_x, arrow_y, v_phi[frame])
+    v_arrow.set_data(
+        (x[frame] + v_x[frame] + v_arrow_x,),
+        (y[frame] + v_y[frame] + v_arrow_y,)
+    )
+
+    a_line.set_data(
+        (x[frame], x[frame] + a_x[frame]),
+        (y[frame], y[frame] + a_y[frame])
+    )
+    a_arrow_x, a_arrow_y = rot2D(arrow_x, arrow_y, a_phi[frame])
+    a_arrow.set_data(
+        (x[frame] + a_x[frame] + a_arrow_x,),
+        (y[frame] + a_y[frame] + a_arrow_y,)
+    )
 
 
 anim = animation.FuncAnimation(
     fig=fig,
-    func=update,       # функция, запускаемая для каждого кадра
-    frames=len(t),     # количество кадров
-    interval=1,        # задержка между кадрами, в миллисекундах
-    repeat_delay=3000  # задержка в миллисекундах между последовательными
-                       # запусками анимации
+    func=update,    # функция, запускаемая для каждого кадра
+    frames=len(t),  # количество кадров
+    interval=50,    # задержка в миллисекундах между кадрами
+    # задержка в миллисекундах между последовательными запусками анимации
+    repeat_delay=3000
 )
+
 
 parser = argparse.ArgumentParser()
 parser.add_argument('-s', '--save', action='store_true')
@@ -59,11 +162,7 @@ args = parser.parse_args()
 
 if args.save:
     anim_filepath = Path('report/animation.gif')
-    anim.save(
-        filename=str(anim_filepath),
-        writer='pillow',
-        fps=30
-    )
+    anim.save(filename=str(anim_filepath), writer='pillow', fps=30)
     os.system(
         f'img2pdf {anim_filepath} -o '
         f'{anim_filepath.parent / anim_filepath.stem}.pdf'
