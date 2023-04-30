@@ -61,17 +61,20 @@ t = np.linspace(0, T_END, 1000)  # массив моментов времени
 
 def rot_matrix(alpha):
     """
-    :param alpha: угол поворота в радианах
-    :return: матрица поворота
+    Возвращает матрицу поворота для заданного угла alpha (в радианах)
     """
     return [[cos(alpha), -sin(alpha)],
             [sin(alpha), cos(alpha)]]
 
 
-def rot2D(x: np.ndarray, y: np.ndarray, alpha):
+def rot2D(*args, alpha):
     """
-    Поворачивает объект (массив точек) на заданный угол
+    Возвращает повёрнутый на заданный угол объект (массив точек)
     """
+    if len(args) == 1:
+        (x, y), = args
+    else:
+        x, y, = args
     return np.matmul(rot_matrix(alpha), [x, y])
 
 
@@ -104,6 +107,9 @@ if max_a_x > max_plot_x or max_a_y > max_plot_y:
     a_n /= k
 
 R = R_f(t)
+# (R_x, R_y) --- вектор, проведённый из рассматриваемой точки
+# в мгновенный центр кривизны траектории
+R_x, R_y = R * rot2D(np.array([v_x, v_y]) / v, alpha=radians(90))
 # ----- МАССИВЫ ДАННЫХ -----
 
 # +++++ НАСТРОЙКА ОТОБРАЖЕНИЯ +++++
@@ -133,77 +139,50 @@ arrow_angle = 30  # угол раствора стрелки, в градуса�
 arrow_width = 2 * arrow_len * tan(radians(arrow_angle / 2))
 arrow_x = np.array((-arrow_len, 0, -arrow_len))
 arrow_y = np.array((-arrow_width / 2, 0, arrow_width / 2))
+arrow_xy = np.array((arrow_x, arrow_y))
 # ----- НАСТРОЙКА ОТОБРАЖЕНИЯ -----
 
 ax.plot(x, y, color='tab:blue')
 
-point: lines.Line2D = ax.plot(x[0], y[0], marker='o', color='tab:orange')[0]
+point: lines.Line2D = ax.plot(0, 0, marker='o', color='tab:orange')[0]
 
-v_line = ax.plot(
-    (x[0], x[0] + v_x[0]),
-    (y[0], y[0] + v_y[0]),
-    color='tab:green'
-)[0]
+v_line = ax.plot(0, 0, color='tab:green')[0]
+v_arrow = ax.plot(0, 0, color='tab:green')[0]
 
-v_arrow_x, v_arrow_y = rot2D(arrow_x, arrow_y, v_phi[0])
-v_arrow = ax.plot(
-    x[0] + v_x[0] + v_arrow_x,
-    y[0] + v_y[0] + v_arrow_y,
-    color='tab:green'
-)[0]
+a_line = ax.plot(0, 0, color='tab:red')[0]
+a_arrow = ax.plot(0, 0, color='tab:red')[0]
 
-a_line = ax.plot(
-    (x[0], x[0] + a_x[0]),
-    (y[0], y[0] + a_y[0]),
-    color='tab:red'
-)[0]
-
-a_arrow_x, a_arrow_y = rot2D(arrow_x, arrow_y, a_phi[0])
-a_arrow = ax.plot(
-    x[0] + a_x[0] + a_arrow_x,
-    y[0] + a_y[0] + a_arrow_y,
-    color='tab:red'
-)[0]
-
-# (R0_x, R0_y) --- нормированный вектор,
-# направленный из точки, движение которой рассматриваем,
-# в мгновенный центр кривизны траектории
-R0_x, R0_y = rot2D(v_x / v, v_y / v, radians(90))
-R_x, R_y = R0_x * R, R0_y * R
-curvature_center = ax.plot(
-    x[0] + R_x[0],
-    y[0] + R_y[0],
-    marker='o',
-    color='tab:olive'
-)[0]
+curvature_center = ax.plot(0, 0, marker='o', color='tab:olive')[0]
 
 
 def update(frame):
-    point.set_data((x[frame],), (y[frame],))
+    point.set_data([x[frame]], [y[frame]])
 
     v_line.set_data(
-        (x[frame], x[frame] + v_x[frame]),
-        (y[frame], y[frame] + v_y[frame])
+        [x[frame], x[frame] + v_x[frame]],
+        [y[frame], y[frame] + v_y[frame]]
     )
-    v_arrow_x, v_arrow_y = rot2D(arrow_x, arrow_y, v_phi[frame])
     v_arrow.set_data(
-        (x[frame] + v_x[frame] + v_arrow_x,),
-        (y[frame] + v_y[frame] + v_arrow_y,)
+        np.array([
+            [x[frame] + v_x[frame]],
+            [y[frame] + v_y[frame]]
+        ]) + rot2D(arrow_xy, alpha=v_phi[frame])
     )
 
     a_line.set_data(
-        (x[frame], x[frame] + a_x[frame]),
-        (y[frame], y[frame] + a_y[frame])
+        [x[frame], x[frame] + a_x[frame]],
+        [y[frame], y[frame] + a_y[frame]]
     )
-    a_arrow_x, a_arrow_y = rot2D(arrow_x, arrow_y, a_phi[frame])
     a_arrow.set_data(
-        (x[frame] + a_x[frame] + a_arrow_x,),
-        (y[frame] + a_y[frame] + a_arrow_y,)
+        np.array([
+            [x[frame] + a_x[frame]],
+            [y[frame] + a_y[frame]]
+        ]) + rot2D(arrow_xy, alpha=a_phi[frame])
     )
 
     curvature_center.set_data(
-        (x[frame] + R_x[frame],),
-        (y[frame] + R_y[frame],)
+        [x[frame] + R_x[frame]],
+        [y[frame] + R_y[frame]]
     )
 
 
@@ -218,13 +197,13 @@ anim = animation.FuncAnimation(
 
 parser = argparse.ArgumentParser()
 parser.add_argument('-s', '--save', action='store_true')
-args = parser.parse_args()
+terminal_args = parser.parse_args()
 
 # в зависимости от аргумента командной строки анимация
 # либо сохраняется,
 # либо отображается непосредственно в окне
 
-if args.save:
+if terminal_args.save:
     anim_filepath = Path('report/animation.gif')
     anim.save(filename=str(anim_filepath), writer='pillow', fps=30)
     os.system(
