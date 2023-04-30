@@ -4,8 +4,9 @@ import os
 import sympy as sp
 import numpy as np
 from math import sin, cos, tan, radians
-import matplotlib.pyplot as plt
 from screeninfo import get_monitors
+import matplotlib
+import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 
 # используются для указания типа значений,
@@ -131,8 +132,25 @@ ax.axis('equal')
 # определение области графика, в которой будет производиться отрисовка
 ax.set_xlim(-max_plot_x, max_plot_x)
 ax.set_ylim(-max_plot_y, max_plot_y)
-ax.set_xlabel('x', loc='right')
-ax.set_ylabel('y', loc='top')
+
+font_size = matplotlib.rcParams['font.size']
+ax.set_xlabel(
+    'x',
+    x=1 - font_size / (72 * fig_width),
+    labelpad=-3.2 * font_size,
+    fontfamily='serif',
+    fontsize='x-large',
+    fontstyle='italic'
+)
+ax.set_ylabel(
+    'y',
+    y=1 - 2.2 * font_size / (72 * fig_width),
+    labelpad=-3.2 * font_size,
+    rotation='horizontal',
+    fontfamily='serif',
+    fontsize='x-large',
+    fontstyle='italic'
+)
 
 arrow_len = 0.3  # длина стрелки
 arrow_angle = 30  # угол раствора стрелки, в градусах
