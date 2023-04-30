@@ -5,6 +5,7 @@ import sympy as sp
 import numpy as np
 from math import sin, cos, tan, radians
 import matplotlib.pyplot as plt
+from screeninfo import get_monitors
 import matplotlib.animation as animation
 
 # используются для указания типа значений,
@@ -19,21 +20,18 @@ t = sp.Symbol('t')
 r = 2 + sp.sin(6 * t)
 phi = 6.5 * t + 1.2 * sp.cos(6 * t)
 
-x = r * sp.cos(phi)
-y = r * sp.sin(phi)
+x, y = r * sp.cos(phi), r * sp.sin(phi)
 
-v_x = sp.diff(x, t)
-v_y = sp.diff(y, t)
-v_sp = sp.sqrt(v_x ** 2 + v_y ** 2)
+v_x, v_y = sp.diff(x, t), sp.diff(y, t)
+v = sp.sqrt(v_x ** 2 + v_y ** 2)
 
-a_x = sp.diff(v_x, t)
-a_y = sp.diff(v_y, t)
+a_x, a_y = sp.diff(v_x, t), sp.diff(v_y, t)
 a_n = sp.det(sp.Matrix(
     [[v_x, v_y],
      [a_x, a_y]]
-)) / v_sp
+)) / v
 
-R = v_sp ** 2 / a_n  # радиус кривизны траектории
+R = v ** 2 / a_n  # радиус кривизны траектории
 # ----- СИМВОЛЬНЫЕ ВЫЧИСЛЕНИЯ -----
 
 # +++++ ПЕРЕВОД В ФУНКЦИИ +++++
@@ -46,7 +44,7 @@ y_f = sp.lambdify(t, y, 'numpy')
 
 v_x_f = sp.lambdify(t, v_x, 'numpy')
 v_y_f = sp.lambdify(t, v_y, 'numpy')
-v_f = sp.lambdify(t, v_sp, 'numpy')
+v_f = sp.lambdify(t, v, 'numpy')
 
 a_x_f = sp.lambdify(t, a_x, 'numpy')
 a_y_f = sp.lambdify(t, a_y, 'numpy')
@@ -80,38 +78,44 @@ def rot2D(x: np.ndarray, y: np.ndarray, alpha):
 x = x_f(t)
 y = y_f(t)
 
-min_x, max_x = np.min(x), np.max(x)
-min_y, max_y = np.min(y), np.max(y)
-plot_left, plot_right = 1.75 * min_x, 1.75 * max_x
-plot_bottom, plot_top = 1.75 * min_y, 1.75 * max_y
-plot_width = plot_right - plot_left
-plot_height = plot_top - plot_bottom
+max_x, max_y = np.max(x), np.max(y)
+max_plot_x, max_plot_y = 1.75 * max_x, 1.75 * max_y
 
-v_x = v_x_f(t)
-v_y = v_y_f(t)
-min_v_x, max_v_x = np.min(v_x), np.max(v_x)
-min_v_y, max_v_y = np.min(v_y), np.max(v_y)
-k = max(max_v_x / plot_right, max_v_y / plot_top)
-v_x /= k
-v_y /= k
-v = v_f(t) / k
+v_x, v_y, v = v_x_f(t), v_y_f(t), v_f(t)
 v_phi = np.arctan2(v_y, v_x)
 
-a_x = a_x_f(t)
-a_y = a_y_f(t)
-min_a_x, max_a_x = np.min(a_x), np.max(a_x)
-min_a_y, max_a_y = np.min(a_y), np.max(a_y)
-k = max(max_a_x / plot_right, max_a_y / plot_top)
-a_x /= k
-a_y /= k
-a_n = a_n_f(t) / k
+max_v_x, max_v_y = np.max(v_x), np.max(v_y)
+if max_v_x > max_plot_x or max_v_y > max_plot_y:
+    # коэффициент уменьшения длины вектора скорости
+    k = max(max_v_x / max_plot_x, max_v_y / max_plot_y)
+    v_x /= k
+    v_y /= k
+    v /= k
+
+a_x, a_y, a_n = a_x_f(t), a_y_f(t), a_n_f(t)
 a_phi = np.arctan2(a_y, a_x)
+
+max_a_x, max_a_y = np.max(a_x), np.max(a_y)
+if max_a_x > max_plot_x or max_a_y > max_plot_y:
+    # коэффициент уменьшения длины вектора ускорения
+    k = max(max_a_x / max_plot_x, max_a_y / max_plot_y)
+    a_x /= k
+    a_y /= k
+    a_n /= k
 
 R = R_f(t)
 # ----- МАССИВЫ ДАННЫХ -----
 
 # +++++ НАСТРОЙКА ОТОБРАЖЕНИЯ +++++
-fig: figure.Figure = plt.figure(figsize=(10, 10))
+monitor = get_monitors()[0]
+monitor_width_in = monitor.width_mm / 25.4
+monitor_height_in = monitor.height_mm / 25.4
+fig_width = fig_height = 0.75 * min(monitor_width_in, monitor_height_in)
+
+fig: figure.Figure = plt.figure(
+    num='Анимация точки',  # заголовок окна
+    figsize=(fig_width, fig_height)
+)
 
 ax: axes._axes.Axes = fig.add_subplot()
 
@@ -119,8 +123,10 @@ ax: axes._axes.Axes = fig.add_subplot()
 ax.axis('equal')
 
 # определение области графика, в которой будет производиться отрисовка
-ax.set_xlim(1.75 * min_x, 1.75 * max_x)
-ax.set_ylim(1.75 * min_y, 1.75 * max_y)
+ax.set_xlim(-max_plot_x, max_plot_x)
+ax.set_ylim(-max_plot_y, max_plot_y)
+ax.set_xlabel('x', loc='right')
+ax.set_ylabel('y', loc='top')
 
 arrow_len = 0.3  # длина стрелки
 arrow_angle = 30  # угол раствора стрелки, в градусах
@@ -159,7 +165,9 @@ a_arrow = ax.plot(
     color='tab:red'
 )[0]
 
-
+# (R0_x, R0_y) --- нормированный вектор,
+# направленный из точки, движение которой рассматриваем,
+# в мгновенный центр кривизны траектории
 R0_x, R0_y = rot2D(v_x / v, v_y / v, radians(90))
 R_x, R_y = R0_x * R, R0_y * R
 curvature_center = ax.plot(
@@ -201,13 +209,12 @@ def update(frame):
 
 anim = animation.FuncAnimation(
     fig=fig,
-    func=update,    # функция, запускаемая для каждого кадра
+    func=update,  # функция, запускаемая для каждого кадра
     frames=len(t),  # количество кадров
-    interval=50,    # задержка в миллисекундах между кадрами
+    interval=50,  # задержка в миллисекундах между кадрами
     # задержка в миллисекундах между последовательными запусками анимации
     repeat_delay=3000
 )
-
 
 parser = argparse.ArgumentParser()
 parser.add_argument('-s', '--save', action='store_true')
