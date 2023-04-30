@@ -13,82 +13,104 @@ import matplotlib.figure as figure
 import matplotlib.axes as axes
 import matplotlib.lines as lines
 
-t_sp = sp.Symbol('t')
+# +++++ СИМВОЛЬНЫЕ ВЫЧИСЛЕНИЯ +++++
+t = sp.Symbol('t')
 
-r_sp = 2 + sp.sin(6 * t_sp)
-phi_sp = 6.5 * t_sp + 1.2 * sp.cos(6 * t_sp)
+r = 2 + sp.sin(6 * t)
+phi = 6.5 * t + 1.2 * sp.cos(6 * t)
 
-x_sp = r_sp * sp.cos(phi_sp)
-y_sp = r_sp * sp.sin(phi_sp)
+x = r * sp.cos(phi)
+y = r * sp.sin(phi)
 
-v_x_sp = sp.diff(x_sp, t_sp)
-v_y_sp = sp.diff(y_sp, t_sp)
-v_sp = sp.sqrt(v_x_sp ** 2 + v_y_sp ** 2)
+v_x = sp.diff(x, t)
+v_y = sp.diff(y, t)
+v_sp = sp.sqrt(v_x ** 2 + v_y ** 2)
 
-a_x_sp = sp.diff(v_x_sp, t_sp)
-a_y_sp = sp.diff(v_y_sp, t_sp)
-a_n_sp = sp.det(sp.Matrix(
-    [[v_x_sp, v_y_sp],
-     [a_x_sp, a_y_sp]]
+a_x = sp.diff(v_x, t)
+a_y = sp.diff(v_y, t)
+a_n = sp.det(sp.Matrix(
+    [[v_x, v_y],
+     [a_x, a_y]]
 )) / v_sp
 
-# радиус кривизны траектории
-R_sp = v_sp ** 2 / a_n_sp
+R = v_sp ** 2 / a_n  # радиус кривизны траектории
+# ----- СИМВОЛЬНЫЕ ВЫЧИСЛЕНИЯ -----
 
+# +++++ ПЕРЕВОД В ФУНКЦИИ +++++
 x_f = sp.lambdify(
-    args=t_sp,  # аргументы, которые будет принимать функция
-    expr=x_sp,  # собственно логическая часть функции
+    args=t,  # аргументы, которые будет принимать функция
+    expr=x,  # собственно логическая часть функции
     modules='numpy'
 )
-y_f = sp.lambdify(t_sp, y_sp, 'numpy')
+y_f = sp.lambdify(t, y, 'numpy')
 
-v_x_f = sp.lambdify(t_sp, v_x_sp, 'numpy')
-v_y_f = sp.lambdify(t_sp, v_y_sp, 'numpy')
-v_f = sp.lambdify(t_sp, v_sp, 'numpy')
+v_x_f = sp.lambdify(t, v_x, 'numpy')
+v_y_f = sp.lambdify(t, v_y, 'numpy')
+v_f = sp.lambdify(t, v_sp, 'numpy')
 
-a_x_f = sp.lambdify(t_sp, a_x_sp, 'numpy')
-a_y_f = sp.lambdify(t_sp, a_y_sp, 'numpy')
-a_n_f = sp.lambdify(t_sp, a_n_sp, 'numpy')
+a_x_f = sp.lambdify(t, a_x, 'numpy')
+a_y_f = sp.lambdify(t, a_y, 'numpy')
+a_n_f = sp.lambdify(t, a_n, 'numpy')
 
-R_f = sp.lambdify(t_sp, R_sp, 'numpy')
+R_f = sp.lambdify(t, R, 'numpy')
+# ----- ПЕРЕВОД В ФУНКЦИИ -----
 
+# +++++ МАССИВЫ ДАННЫХ +++++
 T_END = 20
 
 t = np.linspace(0, T_END, 1000)  # массив моментов времени
 
 
-def rot_matrix(phi):
+def rot_matrix(alpha):
     """
-    :param phi: угол поворота в радианах
+    :param alpha: угол поворота в радианах
     :return: матрица поворота
     """
-    return [[cos(phi), -sin(phi)],
-            [sin(phi), cos(phi)]]
+    return [[cos(alpha), -sin(alpha)],
+            [sin(alpha), cos(alpha)]]
 
 
-def rot2D(x: np.ndarray, y: np.ndarray, phi):
+def rot2D(x: np.ndarray, y: np.ndarray, alpha):
     """
     Поворачивает объект (массив точек) на заданный угол
     """
-    return np.matmul(rot_matrix(phi), [x, y])
+    return np.matmul(rot_matrix(alpha), [x, y])
 
 
 x = x_f(t)
 y = y_f(t)
-# TODO: коэффициент масштабирования должен подбираться автоматически
-v_x = v_x_f(t) / 3
-v_y = v_y_f(t) / 3
-v = v_f(t) / 3
+
+min_x, max_x = np.min(x), np.max(x)
+min_y, max_y = np.min(y), np.max(y)
+plot_left, plot_right = 1.75 * min_x, 1.75 * max_x
+plot_bottom, plot_top = 1.75 * min_y, 1.75 * max_y
+plot_width = plot_right - plot_left
+plot_height = plot_top - plot_bottom
+
+v_x = v_x_f(t)
+v_y = v_y_f(t)
+min_v_x, max_v_x = np.min(v_x), np.max(v_x)
+min_v_y, max_v_y = np.min(v_y), np.max(v_y)
+k = max(max_v_x / plot_right, max_v_y / plot_top)
+v_x /= k
+v_y /= k
+v = v_f(t) / k
 v_phi = np.arctan2(v_y, v_x)
 
-a_x = a_x_f(t) / 20
-a_y = a_y_f(t) / 20
-a_n = a_n_f(t) / 20
+a_x = a_x_f(t)
+a_y = a_y_f(t)
+min_a_x, max_a_x = np.min(a_x), np.max(a_x)
+min_a_y, max_a_y = np.min(a_y), np.max(a_y)
+k = max(max_a_x / plot_right, max_a_y / plot_top)
+a_x /= k
+a_y /= k
+a_n = a_n_f(t) / k
 a_phi = np.arctan2(a_y, a_x)
 
 R = R_f(t)
+# ----- МАССИВЫ ДАННЫХ -----
 
-
+# +++++ НАСТРОЙКА ОТОБРАЖЕНИЯ +++++
 fig: figure.Figure = plt.figure(figsize=(10, 10))
 
 ax: axes._axes.Axes = fig.add_subplot()
@@ -97,18 +119,17 @@ ax: axes._axes.Axes = fig.add_subplot()
 ax.axis('equal')
 
 # определение области графика, в которой будет производиться отрисовка
-# TODO: границы должны определяться из
-#  максимального и минимального значений координат и скоростей
-ax.set_xlim(-7, 7)
-ax.set_ylim(-7, 7)
-
-ax.plot(x, y, color='tab:blue')
+ax.set_xlim(1.75 * min_x, 1.75 * max_x)
+ax.set_ylim(1.75 * min_y, 1.75 * max_y)
 
 arrow_len = 0.3  # длина стрелки
 arrow_angle = 30  # угол раствора стрелки, в градусах
 arrow_width = 2 * arrow_len * tan(radians(arrow_angle / 2))
 arrow_x = np.array((-arrow_len, 0, -arrow_len))
 arrow_y = np.array((-arrow_width / 2, 0, arrow_width / 2))
+# ----- НАСТРОЙКА ОТОБРАЖЕНИЯ -----
+
+ax.plot(x, y, color='tab:blue')
 
 point: lines.Line2D = ax.plot(x[0], y[0], marker='o', color='tab:orange')[0]
 
@@ -203,6 +224,5 @@ if args.save:
         f'img2pdf {anim_filepath} -o '
         f'{anim_filepath.parent / anim_filepath.stem}.pdf'
     )
-
 else:
     plt.show()
