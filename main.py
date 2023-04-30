@@ -20,22 +20,37 @@ phi_sp = 6.5 * t_sp + 1.2 * sp.cos(6 * t_sp)
 
 x_sp = r_sp * sp.cos(phi_sp)
 y_sp = r_sp * sp.sin(phi_sp)
+
 v_x_sp = sp.diff(x_sp, t_sp)
 v_y_sp = sp.diff(y_sp, t_sp)
+v_sp = sp.sqrt(v_x_sp ** 2 + v_y_sp ** 2)
+
 a_x_sp = sp.diff(v_x_sp, t_sp)
 a_y_sp = sp.diff(v_y_sp, t_sp)
+a_n_sp = sp.det(sp.Matrix(
+    [[v_x_sp, v_y_sp],
+     [a_x_sp, a_y_sp]]
+)) / v_sp
+
+# радиус кривизны траектории
+R_sp = v_sp ** 2 / a_n_sp
 
 x_f = sp.lambdify(
     args=t_sp,  # аргументы, которые будет принимать функция
     expr=x_sp,  # собственно логическая часть функции
     modules='numpy'
 )
-y_f = sp.lambdify(args=t_sp, expr=y_sp, modules='numpy')
-v_x_f = sp.lambdify(args=t_sp, expr=v_x_sp, modules='numpy')
-v_y_f = sp.lambdify(args=t_sp, expr=v_y_sp, modules='numpy')
-a_x_f = sp.lambdify(args=t_sp, expr=a_x_sp, modules='numpy')
-a_y_f = sp.lambdify(args=t_sp, expr=a_y_sp, modules='numpy')
+y_f = sp.lambdify(t_sp, y_sp, 'numpy')
 
+v_x_f = sp.lambdify(t_sp, v_x_sp, 'numpy')
+v_y_f = sp.lambdify(t_sp, v_y_sp, 'numpy')
+v_f = sp.lambdify(t_sp, v_sp, 'numpy')
+
+a_x_f = sp.lambdify(t_sp, a_x_sp, 'numpy')
+a_y_f = sp.lambdify(t_sp, a_y_sp, 'numpy')
+a_n_f = sp.lambdify(t_sp, a_n_sp, 'numpy')
+
+R_f = sp.lambdify(t_sp, R_sp, 'numpy')
 
 T_END = 20
 
@@ -63,10 +78,16 @@ y = y_f(t)
 # TODO: коэффициент масштабирования должен подбираться автоматически
 v_x = v_x_f(t) / 3
 v_y = v_y_f(t) / 3
+v = v_f(t) / 3
 v_phi = np.arctan2(v_y, v_x)
+
 a_x = a_x_f(t) / 20
 a_y = a_y_f(t) / 20
+a_n = a_n_f(t) / 20
 a_phi = np.arctan2(a_y, a_x)
+
+R = R_f(t)
+
 
 fig: figure.Figure = plt.figure(figsize=(10, 10))
 
@@ -118,6 +139,16 @@ a_arrow = ax.plot(
 )[0]
 
 
+R0_x, R0_y = rot2D(v_x / v, v_y / v, radians(90))
+R_x, R_y = R0_x * R, R0_y * R
+curvature_center = ax.plot(
+    x[0] + R_x[0],
+    y[0] + R_y[0],
+    marker='o',
+    color='tab:olive'
+)[0]
+
+
 def update(frame):
     point.set_data((x[frame],), (y[frame],))
 
@@ -139,6 +170,11 @@ def update(frame):
     a_arrow.set_data(
         (x[frame] + a_x[frame] + a_arrow_x,),
         (y[frame] + a_y[frame] + a_arrow_y,)
+    )
+
+    curvature_center.set_data(
+        (x[frame] + R_x[frame],),
+        (y[frame] + R_y[frame],)
     )
 
 
