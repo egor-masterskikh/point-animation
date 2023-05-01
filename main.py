@@ -1,10 +1,8 @@
+import importlib.util
 import argparse
-from pathlib import Path
-import os
 import sympy as sp
 import numpy as np
 from math import sin, cos, tan, radians
-from screeninfo import get_monitors
 import matplotlib
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
@@ -114,10 +112,17 @@ R_x, R_y = R * rot2D(np.array([v_x, v_y]) / v, alpha=radians(90))
 # ----- МАССИВЫ ДАННЫХ -----
 
 # +++++ НАСТРОЙКА ОТОБРАЖЕНИЯ +++++
-monitor = get_monitors()[0]
-monitor_width_in = monitor.width_mm / 25.4
-monitor_height_in = monitor.height_mm / 25.4
-fig_width = fig_height = 0.75 * min(monitor_width_in, monitor_height_in)
+# если установлен пакет screeninfo,
+# то подбираем размер окна, исходя из размеров экрана монитора
+if importlib.util.find_spec('screeninfo'):
+    from screeninfo import get_monitors
+
+    monitor = get_monitors()[0]
+    monitor_width_in = monitor.width_mm / 25.4
+    monitor_height_in = monitor.height_mm / 25.4
+    fig_width = fig_height = 0.75 * min(monitor_width_in, monitor_height_in)
+else:
+    fig_width = fig_height = 8
 
 fig: figure.Figure = plt.figure(
     num='Анимация точки',  # заголовок окна
@@ -222,11 +227,22 @@ terminal_args = parser.parse_args()
 # либо отображается непосредственно в окне
 
 if terminal_args.save:
+    from pathlib import Path
+
     anim_filepath = Path('report/animation.gif')
     anim.save(filename=str(anim_filepath), writer='pillow', fps=30)
-    os.system(
-        f'img2pdf {anim_filepath} -o '
-        f'{anim_filepath.parent / anim_filepath.stem}.pdf'
-    )
+
+    import logging
+    import img2pdf
+
+    # устанавливаем уровень логирования не ниже уровня ошибок,
+    # чтобы не получать предупреждения при работе функции img2pdf.convert
+    logging.basicConfig(level=logging.ERROR)
+
+    pdf_frames_filepath = f'{anim_filepath.parent / anim_filepath.stem}.pdf'
+    with open(pdf_frames_filepath, 'wb') as pdf_frames_file:
+        pdf_frames_file.write(
+            img2pdf.convert(str(anim_filepath))
+        )
 else:
     plt.show()
