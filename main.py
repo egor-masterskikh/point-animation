@@ -3,16 +3,13 @@ import argparse
 import sympy as sp
 import numpy as np
 from math import sin, cos, tan, radians
-import matplotlib.pyplot as plt
 from matplotlib import rcParams
-import matplotlib.patches as patches
+import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 
 # используются для указания типа значений,
 # возвращаемых методами matplotlib'а
-import matplotlib.figure as figure
 import matplotlib.axes as axes
-import matplotlib.lines as lines
 
 # +++++ СИМВОЛЬНЫЕ ВЫЧИСЛЕНИЯ +++++
 t = sp.Symbol('t')
@@ -87,24 +84,8 @@ max_plot_x, max_plot_y = 1.75 * max_x, 1.75 * max_y
 v_x, v_y, v = v_x_f(t), v_y_f(t), v_f(t)
 v_phi = np.arctan2(v_y, v_x)
 
-max_v_x, max_v_y = np.max(v_x), np.max(v_y)
-if max_v_x > max_plot_x or max_v_y > max_plot_y:
-    # коэффициент уменьшения длины вектора скорости
-    k = max(max_v_x / max_plot_x, max_v_y / max_plot_y)
-    v_x /= k
-    v_y /= k
-    v /= k
-
 a_x, a_y, a_n = a_x_f(t), a_y_f(t), a_n_f(t)
 a_phi = np.arctan2(a_y, a_x)
-
-max_a_x, max_a_y = np.max(a_x), np.max(a_y)
-if max_a_x > max_plot_x or max_a_y > max_plot_y:
-    # коэффициент уменьшения длины вектора ускорения
-    k = max(max_a_x / max_plot_x, max_a_y / max_plot_y)
-    a_x /= k
-    a_y /= k
-    a_n /= k
 
 R = R_f(t)
 # (R_x, R_y) --- вектор, проведённый из рассматриваемой точки
@@ -121,6 +102,17 @@ rcParams['font.size'] = 12
 rcParams['axes.labelsize'] = 14
 rcParams['axes.labelpad'] = -(rcParams['axes.labelsize']
                               + rcParams['ytick.major.size'])
+x_label_kw = dict(
+    horizontalalignment='left',
+    verticalalignment='center'
+)
+
+arrow_len = 0.3  # длина стрелки
+arrow_angle = 30  # угол раствора стрелки, в градусах
+arrow_width = 2 * arrow_len * tan(radians(arrow_angle / 2))
+arrow_x = np.array((-arrow_len, 0, -arrow_len))
+arrow_y = np.array((-arrow_width / 2, 0, arrow_width / 2))
+arrow_xy = np.array((arrow_x, arrow_y))
 
 # если установлен пакет screeninfo,
 # то подбираем размер окна, исходя из размеров экрана монитора
@@ -130,7 +122,8 @@ if importlib.util.find_spec('screeninfo'):
     monitor = get_monitors()[0]
     monitor_width_in = monitor.width_mm / 25.4
     monitor_height_in = monitor.height_mm / 25.4
-    fig_width = fig_height = min(monitor_width_in, monitor_height_in)
+    fig_width = monitor_width_in
+    fig_height = monitor_height_in
 else:
     fig_width = fig_height = 8
 
@@ -147,81 +140,88 @@ fig.suptitle(
 )
 
 ax_y_x: axes._axes.Axes = axd['y(x)']
-ax_x_t = axd['x(t)']
-ax_v_y_t = axd['v_y(t)']
+ax_x_t: axes._axes.Axes = axd['x(t)']
+ax_v_y_t: axes._axes.Axes = axd['v_y(t)']
 
-# сохранение пропорций графика вне зависимости от конфигурации окна
-ax_y_x.axis('equal')
+# сохранение пропорций графика посредством
+# изменения размеров ограничивающего блока
+ax_y_x.axis('scaled')
 
 # определение области графика, в которой будет производиться отрисовка
 ax_y_x.set_xlim(-max_plot_x, max_plot_x)
 ax_y_x.set_ylim(-max_plot_y, max_plot_y)
-
-x_label_kw = dict(
-    horizontalalignment='left',
-    verticalalignment='center'
-)
-
-y_label_kw = dict(
-    rotation='horizontal',
-    horizontalalignment='center',
-    verticalalignment='bottom',
-)
+ax_x_t.set_xlim(0, T_END)
+ax_v_y_t.set_xlim(0, T_END)
 
 ax_y_x.set_xlabel(
     '$x$',
     x=1 + rcParams['axes.labelsize'] / ax_y_x.bbox.width,
     **x_label_kw
 )
-ax_y_x.set_ylabel(
-    '$y$',
-    y=1 + rcParams['axes.labelsize'] / ax_y_x.bbox.height,
-    **y_label_kw
-)
+ax_y_x.set_title('$y$', loc='left')
 
-arrow_len = 0.3  # длина стрелки
-arrow_angle = 30  # угол раствора стрелки, в градусах
-arrow_width = 2 * arrow_len * tan(radians(arrow_angle / 2))
-arrow_x = np.array((-arrow_len, 0, -arrow_len))
-arrow_y = np.array((-arrow_width / 2, 0, arrow_width / 2))
-arrow_xy = np.array((arrow_x, arrow_y))
+ax_x_t.set_xlabel(
+    '$t$',
+    x=1 + rcParams['axes.labelsize'] / ax_x_t.bbox.width,
+    **x_label_kw
+)
+ax_x_t.set_title('$x$', loc='left')
+
+ax_v_y_t.set_xlabel(
+    '$t$',
+    x=1 + rcParams['axes.labelsize'] / ax_v_y_t.bbox.width,
+    **x_label_kw
+)
+ax_v_y_t.set_title('$v_y$', loc='left')
 # ----- НАСТРОЙКА ОТОБРАЖЕНИЯ -----
 
+# +++++ ПОСТРОЕНИЯ +++++
 ax_y_x.plot(x, y, color='tab:blue')
 
-point: lines.Line2D = ax_y_x.plot(0, 0, marker='o', color='tab:orange')[0]
+point = ax_y_x.plot(0, 0, marker='o', color='tab:orange')[0]
 
 v_line = ax_y_x.plot(0, 0, color='tab:green')[0]
 v_arrow = ax_y_x.plot(0, 0, color='tab:green')[0]
 
+max_v_x, max_v_y = np.max(v_x), np.max(v_y)
+# коэффициент уменьшения длины вектора скорости
+v_k = max(max_v_x / max_plot_x, max_v_y / max_plot_y)
+
 a_line = ax_y_x.plot(0, 0, color='tab:red')[0]
 a_arrow = ax_y_x.plot(0, 0, color='tab:red')[0]
 
+max_a_x, max_a_y = np.max(a_x), np.max(a_y)
+# коэффициент уменьшения длины вектора ускорения
+a_k = max(max_a_x / max_plot_x, max_a_y / max_plot_y)
+
 curvature_center = ax_y_x.plot(0, 0, marker='o', color='tab:olive')[0]
+
+ax_x_t.plot(t, x, color='tab:blue')
+ax_v_y_t.plot(t, v_y, color='tab:blue')
 
 
 def update(frame):
     point.set_data([x[frame]], [y[frame]])
 
     v_line.set_data(
-        [x[frame], x[frame] + v_x[frame]],
-        [y[frame], y[frame] + v_y[frame]]
+        [x[frame], x[frame] + v_x[frame] / v_k],
+        [y[frame], y[frame] + v_y[frame] / v_k]
     )
     v_arrow.set_data(
         np.array([
-            [x[frame] + v_x[frame]],
-            [y[frame] + v_y[frame]]
+            [x[frame] + v_x[frame] / v_k],
+            [y[frame] + v_y[frame] / v_k]
         ]) + rot2D(arrow_xy, alpha=v_phi[frame])
     )
 
     a_line.set_data(
-        [x[frame], x[frame] + a_x[frame]],
-        [y[frame], y[frame] + a_y[frame]]
+        [x[frame], x[frame] + a_x[frame] / a_k],
+        [y[frame], y[frame] + a_y[frame] / a_k]
     )
     a_arrow.set_data(
         np.array([
-            [x[frame] + a_x[frame]],
-            [y[frame] + a_y[frame]]
+            [x[frame] + a_x[frame] / a_k],
+            [y[frame] + a_y[frame] / a_k]
         ]) + rot2D(arrow_xy, alpha=a_phi[frame])
     )
 
@@ -240,6 +240,11 @@ anim = animation.FuncAnimation(
     repeat_delay=3000
 )
 
+# уменьшаем отступы блока графиков от границ окна
+plt.subplots_adjust(left=0.03, bottom=0.03, right=0.97, top=0.9)
+# ----- ПОСТРОЕНИЯ -----
+
+# +++++ СОХРАНЕНИЕ ИЛИ ОТОБРАЖЕНИЕ +++++
 parser = argparse.ArgumentParser()
 parser.add_argument('-s', '--save', action='store_true')
 terminal_args = parser.parse_args()
@@ -268,3 +273,4 @@ if terminal_args.save:
         )
 else:
     plt.show()
+# ----- СОХРАНЕНИЕ ИЛИ ОТОБРАЖЕНИЕ -----

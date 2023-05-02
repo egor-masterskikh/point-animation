@@ -78,15 +78,21 @@
 
 \stopsubsubject
 
-\startsubsubject[title={Результат работы программы}]
+\page
+
+\setuplayout[footer=0pt]
 
 \getrandomnumber\framenum{1}{1000}
-\externalfigure[animation.pdf][%
-    page=\framenum,
-    width=\textwidth,
-]
+\startmidaligned
+    \externalfigure[animation.pdf][%
+        page=\framenum,
+        orientation=90,
+        maxwidth=\textheight,
+        maxheight=\textwidth,
+    ]
+\stopmidaligned
 
-\stopsubsubject
+\setuplayout[reset]
 
 \stoptext
 \stopcomponent
