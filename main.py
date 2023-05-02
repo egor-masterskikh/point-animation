@@ -3,8 +3,9 @@ import argparse
 import sympy as sp
 import numpy as np
 from math import sin, cos, tan, radians
-import matplotlib
 import matplotlib.pyplot as plt
+from matplotlib import rcParams
+import matplotlib.patches as patches
 import matplotlib.animation as animation
 
 # используются для указания типа значений,
@@ -112,6 +113,15 @@ R_x, R_y = R * rot2D(np.array([v_x, v_y]) / v, alpha=radians(90))
 # ----- МАССИВЫ ДАННЫХ -----
 
 # +++++ НАСТРОЙКА ОТОБРАЖЕНИЯ +++++
+# глобальные настройки
+rcParams['font.family'] = 'serif'
+rcParams['font.serif'] = 'Times New Roman'
+rcParams['mathtext.fontset'] = 'stix'
+rcParams['font.size'] = 12
+rcParams['axes.labelsize'] = 14
+rcParams['axes.labelpad'] = -(rcParams['axes.labelsize']
+                              + rcParams['ytick.major.size'])
+
 # если установлен пакет screeninfo,
 # то подбираем размер окна, исходя из размеров экрана монитора
 if importlib.util.find_spec('screeninfo'):
@@ -120,41 +130,53 @@ if importlib.util.find_spec('screeninfo'):
     monitor = get_monitors()[0]
     monitor_width_in = monitor.width_mm / 25.4
     monitor_height_in = monitor.height_mm / 25.4
-    fig_width = fig_height = 0.75 * min(monitor_width_in, monitor_height_in)
+    fig_width = fig_height = min(monitor_width_in, monitor_height_in)
 else:
     fig_width = fig_height = 8
 
-fig: figure.Figure = plt.figure(
+fig, axd = plt.subplot_mosaic(
+    [['y(x)', 'y(x)'],
+     ['x(t)', 'v_y(t)']],
+    height_ratios=(2, 1),  # первая строка в два раза выше второй
     num='Анимация точки',  # заголовок окна
     figsize=(fig_width, fig_height)
 )
 
-ax: axes._axes.Axes = fig.add_subplot()
+fig.suptitle(
+    r'$r(t) = 2 + \sin 6t$;' + ' ' * 5 + r'$\varphi(t) = 6.5t + 1.2\cos 6t$'
+)
+
+ax_y_x: axes._axes.Axes = axd['y(x)']
+ax_x_t = axd['x(t)']
+ax_v_y_t = axd['v_y(t)']
 
 # сохранение пропорций графика вне зависимости от конфигурации окна
-ax.axis('equal')
+ax_y_x.axis('equal')
 
 # определение области графика, в которой будет производиться отрисовка
-ax.set_xlim(-max_plot_x, max_plot_x)
-ax.set_ylim(-max_plot_y, max_plot_y)
+ax_y_x.set_xlim(-max_plot_x, max_plot_x)
+ax_y_x.set_ylim(-max_plot_y, max_plot_y)
 
-font_size = matplotlib.rcParams['font.size']
-ax.set_xlabel(
-    'x',
-    x=1 - font_size / (72 * fig_width),
-    labelpad=-3.2 * font_size,
-    fontfamily='serif',
-    fontsize='x-large',
-    fontstyle='italic'
+x_label_kw = dict(
+    horizontalalignment='left',
+    verticalalignment='center'
 )
-ax.set_ylabel(
-    'y',
-    y=1 - 2.2 * font_size / (72 * fig_width),
-    labelpad=-3.2 * font_size,
+
+y_label_kw = dict(
     rotation='horizontal',
-    fontfamily='serif',
-    fontsize='x-large',
-    fontstyle='italic'
+    horizontalalignment='center',
+    verticalalignment='bottom',
+)
+
+ax_y_x.set_xlabel(
+    '$x$',
+    x=1 + rcParams['axes.labelsize'] / ax_y_x.bbox.width,
+    **x_label_kw
+)
+ax_y_x.set_ylabel(
+    '$y$',
+    y=1 + rcParams['axes.labelsize'] / ax_y_x.bbox.height,
+    **y_label_kw
 )
 
 arrow_len = 0.3  # длина стрелки
@@ -165,17 +187,17 @@ arrow_y = np.array((-arrow_width / 2, 0, arrow_width / 2))
 arrow_xy = np.array((arrow_x, arrow_y))
 # ----- НАСТРОЙКА ОТОБРАЖЕНИЯ -----
 
-ax.plot(x, y, color='tab:blue')
+ax_y_x.plot(x, y, color='tab:blue')
 
-point: lines.Line2D = ax.plot(0, 0, marker='o', color='tab:orange')[0]
+point: lines.Line2D = ax_y_x.plot(0, 0, marker='o', color='tab:orange')[0]
 
-v_line = ax.plot(0, 0, color='tab:green')[0]
-v_arrow = ax.plot(0, 0, color='tab:green')[0]
+v_line = ax_y_x.plot(0, 0, color='tab:green')[0]
+v_arrow = ax_y_x.plot(0, 0, color='tab:green')[0]
 
-a_line = ax.plot(0, 0, color='tab:red')[0]
-a_arrow = ax.plot(0, 0, color='tab:red')[0]
+a_line = ax_y_x.plot(0, 0, color='tab:red')[0]
+a_arrow = ax_y_x.plot(0, 0, color='tab:red')[0]
 
-curvature_center = ax.plot(0, 0, marker='o', color='tab:olive')[0]
+curvature_center = ax_y_x.plot(0, 0, marker='o', color='tab:olive')[0]
 
 
 def update(frame):
