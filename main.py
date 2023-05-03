@@ -1,15 +1,10 @@
-import importlib.util
-import argparse
 import sympy as sp
 import numpy as np
-from math import sin, cos, tan, radians
+from math import sin, cos, tan, radians, sqrt
 from matplotlib import rcParams
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
-
-# используются для указания типа значений,
-# возвращаемых методами matplotlib'а
-import matplotlib.axes as axes
+import argparse
 
 # +++++ СИМВОЛЬНЫЕ ВЫЧИСЛЕНИЯ +++++
 t = sp.Symbol('t')
@@ -114,34 +109,22 @@ arrow_x = np.array((-arrow_len, 0, -arrow_len))
 arrow_y = np.array((-arrow_width / 2, 0, arrow_width / 2))
 arrow_xy = np.array((arrow_x, arrow_y))
 
-# если установлен пакет screeninfo,
-# то подбираем размер окна, исходя из размеров экрана монитора
-if importlib.util.find_spec('screeninfo'):
-    from screeninfo import get_monitors
-
-    monitor = get_monitors()[0]
-    monitor_width_in = monitor.width_mm / 25.4
-    monitor_height_in = monitor.height_mm / 25.4
-    fig_width = monitor_width_in
-    fig_height = monitor_height_in
-else:
-    fig_width = fig_height = 8
-
 fig, axd = plt.subplot_mosaic(
     [['y(x)', 'y(x)'],
      ['x(t)', 'v_y(t)']],
     height_ratios=(2, 1),  # первая строка в два раза выше второй
     num='Анимация точки',  # заголовок окна
-    figsize=(fig_width, fig_height)
+    # заведомо большой размер (затем окно примет размеры экрана)
+    figsize=[40] * 2
 )
 
 fig.suptitle(
     r'$r(t) = 2 + \sin 6t$;' + ' ' * 5 + r'$\varphi(t) = 6.5t + 1.2\cos 6t$'
 )
 
-ax_y_x: axes._axes.Axes = axd['y(x)']
-ax_x_t: axes._axes.Axes = axd['x(t)']
-ax_v_y_t: axes._axes.Axes = axd['v_y(t)']
+ax_y_x = axd['y(x)']
+ax_x_t = axd['x(t)']
+ax_v_y_t = axd['v_y(t)']
 
 # сохранение пропорций графика посредством
 # изменения размеров ограничивающего блока
@@ -256,6 +239,8 @@ terminal_args = parser.parse_args()
 if terminal_args.save:
     from pathlib import Path
 
+    A4_inches = (8.25, 8.25 * sqrt(2))
+    fig.set_size_inches(*reversed(A4_inches))
     anim_filepath = Path('report/animation.gif')
     anim.save(filename=str(anim_filepath), writer='pillow', fps=30)
 

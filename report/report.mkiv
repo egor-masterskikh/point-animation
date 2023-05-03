@@ -86,15 +86,20 @@
     topspace=1.5cm,
 ]
 
-\getrandomnumber\framenum{1}{1000}
-\startmidaligned
+\startframed[%
+    width=\textwidth,
+    height=\textheight,
+    offset=none,
+    frame=off,
+]
+    \getrandomnumber\framenum{1}{1000}
     \externalfigure[animation.pdf][%
         page=\framenum,
         orientation=90,
-        maxwidth=\textheight,
-        maxheight=\textwidth,
+        maxwidth=\framedheight,
+        maxheight=\framedwidth,
     ]
-\stopmidaligned
+\stopframed
 
 \setuplayout[reset]
 
