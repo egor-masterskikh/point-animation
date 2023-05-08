@@ -1,0 +1,156 @@
+\environment[../env.mkiv]
+
+\startcomponent .
+% \showframe
+\starttext
+
+\setuplayout[titlepage]
+\startalignment[middle]
+    \switchtobodyfont[exo2]
+
+    \switchtobodyfont[1.2em]
+
+    Московский авиационный институт \crlf
+    (национальный исследовательский университет)
+
+    Институт №7 \quotation{Робототехнические и интеллектуальные системы}
+
+    \vfill
+
+    {%
+        \switchtobodyfont[1.3em]
+        \bold
+
+        Лабораторная работа №2 \crlf
+        по курсу теоретической механики
+
+        Статика
+
+        \blank[2*line]
+    }
+
+    \startalignment[left]
+        Выполнил студент группы М7О-106С-22 \crlf
+        Мастерских Егор Александрович
+
+        Преподаватель: Шамин Александр Юрьевич
+    \stopalignment
+
+    \blank[3*line]
+
+    \startalignment[right]
+        Оценка:
+
+        Дата:\hspace[medium] \currentdate[day, month, year]
+    \stopalignment
+
+    \vfill
+
+    Москва \currentdate[year]
+\stopalignment
+
+\page
+
+\setuplayout[reset]
+
+\startsubject[title={Вариант №12}]
+
+\setupcombination[location=top]
+\setupTABLE[each][each][%
+    align={middle, lohi},
+    loffset=1ex,
+    roffset=1ex,
+    width=5ex,  % ширина каждого столбца
+]
+\setupexternalfigure[width=.5\textwidth]
+
+\startsubsubject[title={Задание С.7. Определение реакций опор твёрдого тела}]
+
+Найти реакции опор конструкции.
+
+\startcombination
+{
+    \externalfigure[С.7.png]
+}{}
+{
+    \bTABLE
+        \bTR
+            \bTD[nc=2, offset=none] Силы, кН \eTD
+            \bTD[nc=5, offset=none] Размеры, см \eTD
+        \eTR
+        \bTR
+            \bTD $Q$ \eTD
+            \bTD $G$ \eTD
+            \bTD $a$ \eTD
+            \bTD $b$ \eTD
+            \bTD $c$ \eTD
+            \bTD $R$ \eTD
+            \bTD $r$ \eTD
+        \eTR
+        \bTR
+            \bTD 4 \eTD
+            \bTD 1 \eTD
+            \bTD 25 \eTD
+            \bTD 20 \eTD
+            \bTD 8 \eTD
+            \bTD 15 \eTD
+            \bTD 10 \eTD
+        \eTR
+    \eTABLE
+}{}
+\stopcombination
+
+\stopsubsubject
+
+\startsubsubsubject[title={Текст программы}]
+    \typepythonfile{./С.7.py}
+\stopsubsubsubject
+
+\startsubsubsubject[title={Результат работы программы}]
+
+\stopsubsubsubject
+
+\blank[line]
+
+\startsubsubject[title={Задание С.4. Определение реакций опор составной конструкции (система трёх тел)}]
+
+Найти реакции опор конструкции, состоящей из трёх тел, соединённых в одной точке.
+Составные части соединены с помощью шарниров.
+
+\startcombination
+{
+    \externalfigure[С.4.png]
+}{}
+{
+    \bTABLE
+        \bTR
+            \bTD $P_1$ \eTD
+            \bTD $P_2$ \eTD
+            \bTD $M_1$ \eTD
+            \bTD $M_2$ \eTD
+        \eTR
+        \bTR
+            \bTD[nc=2] кН \eTD
+            \bTD[nc=2] $\text{кН} \cdot \text{м}$ \eTD
+        \eTR
+        \bTR
+            \bTD 12 \eTD
+            \bTD 14 \eTD
+            \bTD 36 \eTD
+            \bTD 28 \eTD
+        \eTR
+    \eTABLE
+}{}
+\stopcombination
+
+\startsubsubsubject[title={Текст программы}]
+    \typepythonfile{./С.4.py}
+\stopsubsubsubject
+
+\startsubsubsubject[title={Результат работы программы}]
+
+\stopsubsubsubject
+
+\stopsubsubject
+\stoptext
+\stopcomponent
