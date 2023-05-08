@@ -3,6 +3,3 @@ venv
 *.log
 *.tuc
 *.vimout
-
-report/animation.pdf
-report/animation.gif

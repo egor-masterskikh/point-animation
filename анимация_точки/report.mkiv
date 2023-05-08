@@ -1,4 +1,4 @@
-\environment[env.mkiv]
+\environment[../env.mkiv]
 
 \startcomponent .
 % \showframe
@@ -74,7 +74,7 @@
 
 \startsubsubject[title={Текст программы}]
 
-\typepythonfile{../main.py}
+\typepythonfile{./main.py}
 
 \stopsubsubject
 
@@ -93,7 +93,7 @@
     frame=off,
 ]
     \getrandomnumber\framenum{1}{1000}
-    \externalfigure[animation.pdf][%
+    \externalfigure[анимация_точки.pdf][%
         page=\framenum,
         orientation=90,
         maxwidth=\framedheight,

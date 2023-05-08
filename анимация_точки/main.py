@@ -241,7 +241,7 @@ if terminal_args.save:
 
     A4_inches = (8.25, 8.25 * sqrt(2))
     fig.set_size_inches(*reversed(A4_inches))
-    anim_filepath = Path('report/animation.gif')
+    anim_filepath = Path('анимация_точки.gif')
     anim.save(filename=str(anim_filepath), writer='pillow', fps=30)
 
     import logging
