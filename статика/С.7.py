@@ -1,6 +1,8 @@
 from sympy import symbols, Matrix, solve
 from math import sin, cos, pi
 import numpy as np
+from numpy.linalg import norm
+from tabulate import tabulate
 
 # модули сил
 Q = 4
@@ -18,9 +20,8 @@ P, R_Ax, R_Ay, R_Az, R_Bx, R_Bz = symbols('P,R_Ax,R_Ay,R_Az,R_Bx,R_Bz')
 # радиус-векторы, проведённые из точки A
 # в точку приложения соответствующей силы
 r_Q = Matrix([r, a, 0])
-r_G = Matrix([0, a - b, 0])
+r_G = Matrix([0, b, 0])
 r_P = Matrix([-R, a + b + 3 * c, 0])
-r_R_A = Matrix([0, 0, 0])
 r_R_B = Matrix([0, a + b, 0])
 
 # силы
@@ -34,24 +35,27 @@ R_B_vec = Matrix([R_Bx, 0, R_Bz])
 F_vec = Q_vec + G_vec + P_vec + R_A_vec + R_B_vec
 
 # суммарный момент
-M_vec = (r_Q.cross(Q_vec) + r_G.cross(G_vec) + r_P.cross(P_vec)
-         + r_R_A.cross(R_A_vec) + r_R_B.cross(R_B_vec))
+M_vec = (r_Q.cross(Q_vec) + r_G.cross(G_vec)
+         + r_P.cross(P_vec) + r_R_B.cross(R_B_vec))
 
 # словарь, где каждой искомой величине соответствует вычисленное значение
 res = solve([F_vec, M_vec], [P, R_Ax, R_Ay, R_Az, R_Bx, R_Bz])
 
-# словарь res с округлёнными значениями
-fmt_res = dict(zip(
-    res.keys(),
-    np.array(tuple(res.values()), dtype=np.double).round(1)
-))
-
+P, R_Ax, R_Ay, R_Az, R_Bx, R_Bz = (
+    res[P], res[R_Ax], res[R_Ay], res[R_Az], res[R_Bx], res[R_Bz]
+)
+R_A_vec = np.array([R_Ax, R_Ay, R_Az], dtype='float')
+R_B_vec = np.array([R_Bx, 0, R_Bz], dtype='float')
+R_A, R_B = norm(R_A_vec), norm(R_B_vec)
 
 with open('С.7_res.txt', 'w') as out_file:
-    print(
-        f'Модуль силы P:\t{fmt_res[P]} кН',
-        f'Сила R_A:\t({fmt_res[R_Ax]},\t{fmt_res[R_Ay]},\t{fmt_res[R_Az]}) кН',
-        f'Сила R_B:\t({fmt_res[R_Bx]},\t{0:.2f},\t{fmt_res[R_Bz]}) кН',
-        sep='\n',
-        file=out_file
-    )
+    R_A_vec = tuple(R_A_vec.round(1))
+    R_B_vec = tuple(R_B_vec.round(1))
+    table = [['', 'Вектор, кН', ' Норма, кН'],
+             ['P', '', P],
+             ['R_A', R_A_vec, R_A],
+             ['R_B', R_B_vec, R_B]]
+    print(tabulate(
+        table, headers='firstrow', floatfmt='.2f',
+        colalign=['center', 'right', 'right']
+    ), file=out_file)
